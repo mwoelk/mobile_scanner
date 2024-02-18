@@ -256,8 +256,21 @@ class _MobileScannerState extends State<MobileScanner>
     return ClipRect(
       child: LayoutBuilder(
         builder: (_, constraints) {
+          if (kIsWeb) {
+            return SizedBox.fromSize(
+              size: constraints.biggest,
+              child: FittedBox(
+                fit: widget.fit,
+                child: SizedBox(
+                  width: size.width,
+                  height: size.height,
+                  child: HtmlElementView(viewType: webId!),
+                ),
+              ),
+            );
+          }
+
           return NativeDeviceOrientationReader(
-            useSensor: true,
             builder: (BuildContext context) {
               final orientation =
                   NativeDeviceOrientationReader.orientation(context);
@@ -285,9 +298,7 @@ class _MobileScannerState extends State<MobileScanner>
                     height: flipSize ? size.width : size.height,
                     child: RotatedBox(
                       quarterTurns: quarterTurns,
-                      child: kIsWeb
-                          ? HtmlElementView(viewType: webId!)
-                          : Texture(textureId: textureId!),
+                      child: Texture(textureId: textureId!),
                     ),
                   ),
                 ),
