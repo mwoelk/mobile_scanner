@@ -9,6 +9,7 @@ import 'package:mobile_scanner/src/mobile_scanner_exception.dart';
 import 'package:mobile_scanner/src/objects/barcode_capture.dart';
 import 'package:mobile_scanner/src/objects/mobile_scanner_arguments.dart';
 import 'package:mobile_scanner/src/scan_window_calculation.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
 
 /// The function signature for the error builder.
 typedef MobileScannerErrorBuilder = Widget Function(
@@ -255,18 +256,43 @@ class _MobileScannerState extends State<MobileScanner>
     return ClipRect(
       child: LayoutBuilder(
         builder: (_, constraints) {
-          return SizedBox.fromSize(
-            size: constraints.biggest,
-            child: FittedBox(
-              fit: widget.fit,
-              child: SizedBox(
-                width: size.width,
-                height: size.height,
-                child: kIsWeb
-                    ? HtmlElementView(viewType: webId!)
-                    : Texture(textureId: textureId!),
-              ),
-            ),
+          return NativeDeviceOrientationReader(
+            useSensor: true,
+            builder: (BuildContext context) {
+              final orientation =
+                  NativeDeviceOrientationReader.orientation(context);
+
+              var quarterTurns = 0;
+              switch (orientation) {
+                case NativeDeviceOrientation.landscapeLeft:
+                  quarterTurns = 3;
+                case NativeDeviceOrientation.landscapeRight:
+                  quarterTurns = 1;
+                case NativeDeviceOrientation.portraitDown:
+                  quarterTurns = 2;
+                default:
+                  break;
+              }
+
+              final flipSize = quarterTurns % 2 != 0;
+
+              return SizedBox.fromSize(
+                size: constraints.biggest,
+                child: FittedBox(
+                  fit: widget.fit,
+                  child: SizedBox(
+                    width: flipSize ? size.height : size.width,
+                    height: flipSize ? size.width : size.height,
+                    child: RotatedBox(
+                      quarterTurns: quarterTurns,
+                      child: kIsWeb
+                          ? HtmlElementView(viewType: webId!)
+                          : Texture(textureId: textureId!),
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
